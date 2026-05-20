@@ -1,0 +1,78 @@
+.care-tab-container {
+  margin-top: 20px;
+  padding: 20px;
+  width: 100%;
+  max-width: 400px;
+  animation: slideUpFade 0.5s ease-out forwards;
+}
+
+.care-subtitle {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.care-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.care-card {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 15px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.care-card:hover {
+  transform: translateY(-2px);
+  background: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.care-card:active {
+  transform: translateY(0);
+}
+
+.care-card-icon {
+  font-size: 2rem;
+  margin-right: 15px;
+  background: rgba(255, 255, 255, 0.5);
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.care-card-content {
+  flex: 1;
+}
+
+.care-card-content h3 {
+  margin: 0 0 5px 0;
+  font-size: 1.1rem;
+  color: var(--color-text);
+}
+
+.care-card-content p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.care-card-badge {
+  font-size: 0.75rem;
+  font-weight: bold;
+  background: #ffcde0;
+  color: #a45a7d;
+  padding: 5px 10px;
+  border-radius: 20px;
+}

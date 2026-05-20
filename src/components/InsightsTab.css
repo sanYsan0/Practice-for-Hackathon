@@ -1,0 +1,75 @@
+.stats-container {
+  padding: 20px;
+  width: 90%;
+  max-width: 400px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.stats-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.stat-row {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-row label {
+  width: 80px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  margin: 0 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease-out;
+}
+
+.fill-happiness { background: var(--color-accent-checkin); }
+.fill-energy { background: var(--color-accent-exercise); }
+.fill-hydration { background: var(--color-accent-water); }
+
+.stat-row span {
+  width: 40px;
+  text-align: right;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.action-logs {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 2px dashed rgba(0, 0, 0, 0.1);
+}
+
+.action-logs h3 {
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+}
+
+.action-logs ul {
+  list-style: none;
+  padding: 0;
+}
+
+.action-logs li {
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+}
