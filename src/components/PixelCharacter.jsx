@@ -1,114 +1,102 @@
 import React from 'react';
-import './PixelCharacter.css';
+import { motion } from 'framer-motion';
 
-const characterData = {
-  cat: [
-    "0000000000000000",
-    "0011000000001100",
-    "0111100000011110",
-    "1111110000111111",
-    "1111111111111111",
-    "1101111111111011",
-    "1101111111111011",
-    "1111111111111111",
-    "0111111111111110",
-    "0011100000011100",
-    "0001111111111000",
-    "0000111111110000",
-    "0001100000011000",
-    "0011110000111100",
-    "0000000000000000",
-    "0000000000000000"
-  ],
-  slime: [
-    "0000000000000000",
-    "0000001111000000",
-    "0000111111110000",
-    "0001111111111000",
-    "0011111111111100",
-    "0110111111101110",
-    "0110111111101110",
-    "1111111111111111",
-    "1111000000001111",
-    "1111111111111111",
-    "0111111111111110",
-    "0011111111111100",
-    "0000000000000000",
-    "0000000000000000",
-    "0000000000000000",
-    "0000000000000000"
-  ],
-  dino: [
-    "0000000000111100",
-    "0000000001111110",
-    "0000000011111111",
-    "0000000011101111",
-    "0000000011111111",
-    "0000000011111110",
-    "0000000011100000",
-    "0011000011111000",
-    "0111111111111100",
-    "1111111111111110",
-    "1111111111111110",
-    "0111111111111100",
-    "0011111111110000",
-    "0001110001110000",
-    "0011110011110000",
-    "0000000000000000"
-  ]
-};
-
-// Colors for the characters based on their "state"
-const getCharacterColor = (type, state) => {
-  if (state === 'sad') return '#a0a0a0'; // Grayish
-  if (state === 'energetic') return '#ff9900'; // Orange glow
+const PixelCharacter = ({ mood }) => {
+  // We'll create a blob/cat-like pixel shape using absolute positioned divs
+  // or a simple SVG to maintain crisp pixels while animating.
   
-  // Default colors
-  if (type === 'cat') return '#5c4b51';
-  if (type === 'slime') return '#3cb371';
-  if (type === 'dino') return '#ff6b6b';
-  
-  return '#000';
-};
+  const getEyeColor = () => {
+    if (mood === 'sad') return '#4a90e2';
+    if (mood === 'tired') return '#888';
+    return '#111';
+  };
 
-const PixelCharacter = ({ type = 'cat', state = 'idle', actionState = 'idle', animationClass = '' }) => {
-  const grid = characterData[type] || characterData.cat;
-  const color = getCharacterColor(type, state);
-
-  // Convert grid to box-shadow pixel art
-  const pixelSize = 6; // Smaller pixels for higher resolution
-  let boxShadow = [];
-  
-  for (let r = 0; r < grid.length; r++) {
-    for (let c = 0; c < grid[r].length; c++) {
-      if (grid[r][c] === '1') {
-        boxShadow.push(`${c * pixelSize}px ${r * pixelSize}px 0 ${color}`);
-      }
+  const getAnimationProps = () => {
+    if (mood === 'tired') {
+      return {
+        animate: { y: [0, 2, 0], scaleY: [1, 0.95, 1] },
+        transition: { repeat: Infinity, duration: 3, ease: "easeInOut" }
+      };
     }
-  }
-
-  // Adjust container size
-  const width = grid[0].length * pixelSize;
-  const height = grid.length * pixelSize;
+    if (mood === 'sad') {
+      return {
+        animate: { y: [0, 1, 0] },
+        transition: { repeat: Infinity, duration: 2, ease: "easeInOut" }
+      };
+    }
+    // Happy
+    return {
+      animate: { y: [0, -6, 0] },
+      transition: { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
+    };
+  };
 
   return (
-    <div className={`pixel-character-container`}>
-      <div className={`pixel-character-wrapper ${animationClass}`}>
-        <div 
-          className="pixel-art" 
-          style={{
-            width: `${pixelSize}px`,
-            height: `${pixelSize}px`,
-            boxShadow: boxShadow.join(', '),
-            margin: '0 auto',
-            position: 'relative',
-            left: `-${width / 2 - pixelSize / 2}px`, // Center offset
-            top: `-${height / 2 - pixelSize / 2}px`
-          }}
+    <motion.div 
+      className="relative w-16 h-14"
+      {...getAnimationProps()}
+    >
+      {/* Body */}
+      <div className="absolute bottom-0 w-16 h-12 bg-[#fdfbf7] rounded-t-[30px] rounded-b-[20px] shadow-[inset_-4px_-4px_0_rgba(0,0,0,0.1),_2px_2px_0_rgba(0,0,0,0.1)]"></div>
+      
+      {/* Ears */}
+      <div className="absolute -top-1 left-1 w-4 h-5 bg-[#fdfbf7] rounded-t-lg shadow-[inset_-2px_0_0_rgba(0,0,0,0.1)] origin-bottom -rotate-12"></div>
+      <div className="absolute -top-1 right-1 w-4 h-5 bg-[#fdfbf7] rounded-t-lg shadow-[inset_-2px_0_0_rgba(0,0,0,0.1)] origin-bottom rotate-12"></div>
+
+      {/* Face */}
+      <div className="absolute top-5 left-0 w-full flex justify-center items-center gap-3 z-10">
+        
+        {/* Left Eye */}
+        <motion.div 
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: getEyeColor() }}
+          animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
+          transition={{ repeat: Infinity, duration: 4, times: [0, 0.45, 0.5, 0.55, 1] }} // Blinking
+        />
+        
+        {/* Mouth */}
+        {mood === 'happy' && <div className="w-2 h-1.5 border-b-2 border-black rounded-b-full opacity-80"></div>}
+        {mood === 'sad' && <div className="w-2 h-1.5 border-t-2 border-black rounded-t-full opacity-80 mt-1"></div>}
+        {mood === 'tired' && <div className="w-2 h-1 bg-black/50 rounded-full mt-1"></div>}
+        
+        {/* Right Eye */}
+        <motion.div 
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: getEyeColor() }}
+          animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
+          transition={{ repeat: Infinity, duration: 4, times: [0, 0.45, 0.5, 0.55, 1] }} // Blinking
         />
       </div>
-      <div className={`character-shadow ${animationClass === 'anim-jump' ? 'shadow-jump' : animationClass === 'anim-bounce' ? 'shadow-bounce' : ''}`}></div>
-    </div>
+
+      {/* Blushes */}
+      {mood === 'happy' && (
+        <>
+          <div className="absolute top-6 left-2 w-2 h-1.5 bg-pink-300 rounded-full opacity-60"></div>
+          <div className="absolute top-6 right-2 w-2 h-1.5 bg-pink-300 rounded-full opacity-60"></div>
+        </>
+      )}
+
+      {/* Tears */}
+      {mood === 'sad' && (
+        <motion.div 
+          className="absolute top-7 left-3 w-1.5 h-2 bg-blue-400 rounded-full opacity-80"
+          animate={{ y: [0, 5, 5], opacity: [1, 0, 0] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+        />
+      )}
+
+      {/* Zzz */}
+      {mood === 'tired' && (
+        <motion.div 
+          className="absolute -top-4 -right-2 text-[10px] font-pixel text-gray-500"
+          animate={{ y: [0, -10], x: [0, 5], opacity: [1, 0] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+        >
+          z
+        </motion.div>
+      )}
+
+    </motion.div>
   );
 };
 
