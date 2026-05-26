@@ -1,0 +1,18 @@
+{
+  "id": "aegis-command-center",
+  "name": "Aegis Command Center",
+  "version": "1.0.0",
+  "description": "Orchestrate, monitor, and manage autonomous local AI agents via OpenClaw. The ultimate Workspace Wellness Guardian.",
+  "author": "Aegis",
+  "icon": "ShieldCheck",
+  "enabled": true,
+  "sidebar": {
+    "position": 2,
+    "label": "Aegis Command",
+    "route": "/aegis"
+  },
+  "settings": {
+    "hasSettings": true,
+    "route": "/aegis/settings"
+  }
+}
