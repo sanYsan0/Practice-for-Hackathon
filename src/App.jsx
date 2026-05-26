@@ -1,85 +1,76 @@
 import React, { useState, useEffect } from 'react';
-import DeviceFrame from './components/DeviceFrame';
-import RightPanels from './components/RightPanels';
-import CozyHomePanel from './components/CozyHomePanel';
-import BottomNav from './components/BottomNav';
+import Sidebar from './components/Sidebar';
+import TerminalPanel from './components/TerminalPanel';
+import FleetGrid from './components/FleetGrid';
+import { AgentService } from './services/agentService';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('home');
-  const [stats, setStats] = useState({
-    water: 0,
-    play: 0,
-    rest: 0,
-    pet: 0,
-    sleep: 0,
-  });
+  const [agents, setAgents] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [systemHealth, setSystemHealth] = useState({ cpu: 12, memory: 45, tokenBurn: 0 });
 
-  const [mood, setMood] = useState('happy'); // 'happy', 'sad', 'tired'
-  const [affirmation, setAffirmation] = useState("Mochi is relaxing. You're doing great today!");
+  useEffect(() => {
+    // Mock loading active OpenClaw agents
+    const initialAgents = AgentService.getAgents();
+    setAgents(initialAgents);
 
-  const handleAction = (actionId) => {
-    setStats(prev => {
-      const newStats = { ...prev };
-      if (actionId === 'hydrate') newStats.water += 1;
-      if (actionId === 'play') newStats.play += 1;
-      if (actionId === 'comfort') newStats.pet += 1;
-      if (actionId === 'sleep') newStats.sleep += 1;
-      return newStats;
-    });
+    const logInterval = setInterval(() => {
+      const newLog = AgentService.generateMockLog();
+      setLogs(prev => [...prev, newLog].slice(-50)); // Keep last 50 logs
+      
+      // Update token burn
+      if(newLog.includes("Tokens:")) {
+         setSystemHealth(prev => ({...prev, tokenBurn: prev.tokenBurn + 45}));
+      }
+    }, 2000);
 
-    if (actionId === 'hydrate') setAffirmation("Glug glug! Mochi feels refreshed! 💧");
-    if (actionId === 'play') setAffirmation("Yay! Mochi loves playing! ⚽");
-    if (actionId === 'comfort') setAffirmation("Mochi purrs happily... 💖");
-    if (actionId === 'sleep') setAffirmation("Zzz... Mochi is resting. 🌙");
+    return () => clearInterval(logInterval);
+  }, []);
 
-    setTimeout(() => {
-      setAffirmation("Mochi is relaxing. You're doing great today!");
-    }, 4000);
+  const handleSpawn = (type) => {
+    const newAgent = AgentService.spawn(type);
+    setAgents(prev => [...prev, newAgent]);
+    setLogs(prev => [...prev, `[SYSTEM] Spawning new ${type} agent: ${newAgent.id}`]);
   };
 
-  const changeMood = (newMood) => {
-    setMood(newMood);
-    if(newMood === 'happy') setAffirmation("You're feeling good! Mochi is happy too!");
-    if(newMood === 'sad') setAffirmation("It's okay to feel sad. Mochi is here for you.");
-    if(newMood === 'tired') setAffirmation("Make sure to rest. Mochi will keep watch.");
+  const handleCommand = (cmd) => {
+    setLogs(prev => [...prev, `[USER] ${cmd}`]);
+    
+    setTimeout(() => {
+      if(cmd.startsWith('kill')) {
+        const id = cmd.split(' ')[1];
+        setAgents(prev => prev.filter(a => a.id !== id));
+        setLogs(prev => [...prev, `[SYSTEM] Terminated agent: ${id}`]);
+      } else {
+        setLogs(prev => [...prev, `[AEGIS] Command acknowledged. Dispatching to fleet...`]);
+      }
+    }, 800);
   };
 
   return (
-    <div className="min-h-screen bg-pastelCream flex flex-col font-sans text-gray-800 pb-20 selection:bg-pastelPink">
-      
-      {/* Header */}
-      <header className="p-4 flex justify-between items-center max-w-6xl mx-auto w-full">
-        <h1 className="font-pixel text-xl tracking-wider text-pastelPinkDark drop-shadow-sm">MOCHI.EXE</h1>
-      </header>
+    <div className="min-h-screen bg-[#0a0a0f] text-gray-300 font-mono flex">
+      {/* Sidebar for System Health & Spawning */}
+      <Sidebar health={systemHealth} onSpawn={handleSpawn} />
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 gap-6 pb-6">
-        
-        {/* Top Section: Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* Left Column: Tamagotchi Device (spans 5 cols on lg) */}
-          <div className="lg:col-span-5 flex justify-center">
-            <DeviceFrame stats={stats} mood={mood} onAction={handleAction} />
+      <main className="flex-1 flex flex-col p-6 gap-6 h-screen">
+        <header className="flex justify-between items-center border-b border-gray-800 pb-4">
+          <h1 className="text-xl font-bold text-blue-400">🛡️ Aegis Command Center</h1>
+          <div className="text-sm text-gray-500">ARI.Software Module // Local OpenClaw Orchestrator</div>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 overflow-hidden">
+          {/* Active Agents Grid */}
+          <div className="lg:col-span-2 overflow-y-auto pr-2 custom-scrollbar">
+             <h2 className="text-sm font-semibold text-gray-400 mb-4 uppercase tracking-widest">Active Swarm</h2>
+             <FleetGrid agents={agents} />
           </div>
 
-          {/* Right Column: Tracking Panels (spans 7 cols on lg) */}
-          <div className="lg:col-span-7">
-            <RightPanels stats={stats} mood={mood} changeMood={changeMood} />
+          {/* Terminal / Logs */}
+          <div className="lg:col-span-1 h-full">
+            <TerminalPanel logs={logs} onCommand={handleCommand} />
           </div>
-
         </div>
-
-        {/* Bottom Section: Cozy Home Panel */}
-        <div className="mt-4">
-          <CozyHomePanel mood={mood} affirmation={affirmation} />
-        </div>
-
       </main>
-
-      {/* Fixed Bottom Navigation */}
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
-      
     </div>
   );
 }
