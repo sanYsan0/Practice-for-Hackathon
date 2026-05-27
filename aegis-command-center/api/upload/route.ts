@@ -4,7 +4,7 @@
  * Wraps the ARI File Storage System with module-specific validation.
  * For simple uploads, modules can call /api/storage/upload directly instead.
  *
- * Endpoint: POST /api/modules/module-template/upload
+ * Endpoint: POST /api/modules/aegis-command-center/upload
  *
  * Storage backend is selected by ARI_STORAGE_PROVIDER in .env.local
  * (filesystem | s3 | r2 | supabase-s3; filesystem is the default).
@@ -18,7 +18,7 @@ import { getAuthenticatedUser } from '@/lib/auth-helpers'
 import { createErrorResponse } from '@/lib/api-helpers'
 import { getStorageProvider, sanitizeFilename, readStorageConfig } from '@/lib/storage'
 
-const BUCKET = 'module-template'
+const BUCKET = 'aegis-command-center'
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ path: result.path, name: result.name }, { status: 201 })
   } catch (error) {
-    console.error('POST /api/modules/module-template/upload error:', error instanceof Error ? error.message : error)
+    console.error('POST /api/modules/aegis-command-center/upload error:', error instanceof Error ? error.message : error)
     return createErrorResponse('Internal server error', 500)
   }
 }

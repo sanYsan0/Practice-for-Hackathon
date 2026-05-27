@@ -1,20 +1,3 @@
-/**
- * Module Template Module - Data API Routes
- *
- * Reference template demonstrating ARI's API conventions:
- * - `validateRequestBody` / `validateQueryParams` for input validation
- * - `getAuthenticatedUser()` + `withRLS()` for tenant isolation
- * - Defense-in-depth: explicit `user_id` filters in addition to RLS
- * - `createErrorResponse` + safe error logging
- * - All four CRUD verbs (GET / POST / PUT / DELETE)
- *
- * Endpoints:
- * - GET    /api/modules/module-template/data       - List entries (paginated)
- * - POST   /api/modules/module-template/data       - Create new entry
- * - PUT    /api/modules/module-template/data       - Update an entry by id
- * - DELETE /api/modules/module-template/data?id=x  - Delete entry by id
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/lib/auth-helpers'
 import {
@@ -24,162 +7,120 @@ import {
   toSnakeCase,
 } from '@/lib/api-helpers'
 import { z } from 'zod'
-import { moduleTemplateEntries } from '@/lib/db/schema'
+import { aegisAgents } from '@/lib/db/schema'
 import { and, eq, desc } from 'drizzle-orm'
 
-// ─── Drizzle Query Quick Reference ─────────────────────────────────────
-// This route demonstrates basic CRUD. Here are additional query patterns
-// you may need (all run inside withRLS()):
-//
-// OPERATORS (import from "drizzle-orm"):
-//   or(eq(t.status, 'a'), eq(t.status, 'b'))     → status = 'a' OR status = 'b'
-//   like(t.title, '%search%')                     → title LIKE '%search%'
-//   ilike(t.title, '%search%')                    → case-insensitive LIKE
-//   isNull(t.deletedAt)                           → deleted_at IS NULL
-//   not(eq(t.status, 'archived'))                 → status != 'archived'
-//   inArray(t.id, ['a','b','c'])                  → id IN ('a','b','c')
-//   between(t.score, 1, 10)                       → score BETWEEN 1 AND 10
-//   sql`${t.name} ILIKE ${'%' + q + '%'}`         → raw SQL escape hatch
-//
-// COUNT:
-//   import { count } from 'drizzle-orm'
-//   const [{ total }] = await withRLS(db =>
-//     db.select({ total: count() }).from(myTable)
-//   )
-//
-// SELECT SPECIFIC COLUMNS:
-//   await withRLS(db =>
-//     db.select({ id: t.id, title: t.title }).from(t)
-//   )
-//
-// UPSERT (on conflict):
-//   await withRLS(db =>
-//     db.insert(t).values({ userId: user.id, key: 'k', value: 'v' })
-//       .onConflictDoUpdate({
-//         target: [t.userId, t.key],
-//         set: { value: 'v', updatedAt: sql`now()` },
-//       })
-//   )
-// ────────────────────────────────────────────────────────────────────────
+const AgentTypeEnum = z.enum(['Orchestrator', 'Coder', 'Analyst', 'Researcher', 'Writer', 'Scraper'])
+const ModelEnum = z.enum(['claude-3-5-sonnet', 'claude-3-opus', 'gemini-3.1-pro', 'llama-3-8b', 'gpt-4o'])
+const ThemeEnum = z.enum(['cyberpunk', 'neon-green', 'hacker-red', 'deep-blue'])
+const StatusEnum = z.enum(['IDLE', 'WORKING', 'ERROR', 'OFFLINE'])
 
-const CreateEntrySchema = z.object({
-  message: z
-    .string()
-    .min(1, 'Message is required')
-    .max(500, 'Message must be 500 characters or fewer'),
+const CreateAgentSchema = z.object({
+  agent_name: z.string().min(1).max(100),
+  agent_type: AgentTypeEnum,
+  model: ModelEnum,
+  theme: ThemeEnum.optional().default('cyberpunk'),
 })
 
-const UpdateEntrySchema = z.object({
-  id: z.string().uuid('Invalid entry id format'),
-  message: z
-    .string()
-    .min(1, 'Message is required')
-    .max(500, 'Message must be 500 characters or fewer'),
+const UpdateAgentSchema = z.object({
+  id: z.string().uuid(),
+  status: StatusEnum.optional(),
+  tokens_burned: z.number().int().min(0).optional(),
+  health: z.number().int().min(0).max(100).optional(),
+  theme: ThemeEnum.optional(),
 })
 
 const ListQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(500).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
   offset: z.coerce.number().int().min(0).optional(),
 })
 
 const DeleteQuerySchema = z.object({
-  id: z.string().uuid('Invalid entry id format'),
+  id: z.string().uuid(),
 })
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const queryValidation = validateQueryParams(searchParams, ListQuerySchema)
-    if (!queryValidation.success) {
-      return queryValidation.response
-    }
-    const limit = queryValidation.data.limit ?? 100
+    if (!queryValidation.success) return queryValidation.response
+
+    const limit = queryValidation.data.limit ?? 50
     const offset = queryValidation.data.offset ?? 0
 
     const { user, withRLS } = await getAuthenticatedUser()
-    if (!user || !withRLS) {
-      return createErrorResponse('Unauthorized - Valid authentication required', 401)
-    }
+    if (!user || !withRLS) return createErrorResponse('Unauthorized', 401)
 
-const entries = await withRLS((db) =>
-      db
-        .select()
-        .from(moduleTemplateEntries)
-        .where(eq(moduleTemplateEntries.userId, user.id))
-        .orderBy(desc(moduleTemplateEntries.createdAt))
+    const agents = await withRLS((db) =>
+      db.select()
+        .from(aegisAgents)
+        .where(eq(aegisAgents.userId, user.id))
+        .orderBy(desc(aegisAgents.createdAt))
         .limit(limit)
         .offset(offset)
     )
 
-    return NextResponse.json({
-      entries: toSnakeCase(entries),
-      count: entries.length,
-    })
+    return NextResponse.json({ agents: toSnakeCase(agents), count: agents.length })
   } catch (error) {
-    console.error('GET /api/modules/module-template/data error:', error instanceof Error ? error.message : error)
+    console.error('GET /api/modules/aegis-command-center/data error:', error instanceof Error ? error.message : error)
     return createErrorResponse('Internal server error', 500)
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const validation = await validateRequestBody(request, CreateEntrySchema)
-    if (!validation.success) {
-      return validation.response
-    }
+    const validation = await validateRequestBody(request, CreateAgentSchema)
+    if (!validation.success) return validation.response
 
     const { user, withRLS } = await getAuthenticatedUser()
-    if (!user || !withRLS) {
-      return createErrorResponse('Unauthorized - Valid authentication required', 401)
-    }
+    if (!user || !withRLS) return createErrorResponse('Unauthorized', 401)
 
-    // INSERT requires explicit user_id (RLS validates but does not auto-populate).
     const data = await withRLS((db) =>
-      db
-        .insert(moduleTemplateEntries)
+      db.insert(aegisAgents)
         .values({
           userId: user.id,
-          message: validation.data.message,
+          agentName: validation.data.agent_name,
+          agentType: validation.data.agent_type,
+          model: validation.data.model,
+          theme: validation.data.theme,
         })
         .returning()
     )
 
-    return NextResponse.json({ entry: toSnakeCase(data[0]) }, { status: 201 })
+    return NextResponse.json({ agent: toSnakeCase(data[0]) }, { status: 201 })
   } catch (error) {
-    console.error('POST /api/modules/module-template/data error:', error instanceof Error ? error.message : error)
+    console.error('POST /api/modules/aegis-command-center/data error:', error instanceof Error ? error.message : error)
     return createErrorResponse('Internal server error', 500)
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    const validation = await validateRequestBody(request, UpdateEntrySchema)
-    if (!validation.success) {
-      return validation.response
-    }
+    const validation = await validateRequestBody(request, UpdateAgentSchema)
+    if (!validation.success) return validation.response
 
     const { user, withRLS } = await getAuthenticatedUser()
-    if (!user || !withRLS) {
-      return createErrorResponse('Unauthorized - Valid authentication required', 401)
-    }
+    if (!user || !withRLS) return createErrorResponse('Unauthorized', 401)
 
-    const { id, message } = validation.data
+    const { id, ...fields } = validation.data
+    const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() }
+    if (fields.status !== undefined) updates.status = fields.status
+    if (fields.tokens_burned !== undefined) updates.tokensBurned = fields.tokens_burned
+    if (fields.health !== undefined) updates.health = fields.health
+    if (fields.theme !== undefined) updates.theme = fields.theme
 
-const data = await withRLS((db) =>
-      db
-        .update(moduleTemplateEntries)
-        .set({ message, updatedAt: new Date().toISOString() })
-        .where(and(eq(moduleTemplateEntries.id, id), eq(moduleTemplateEntries.userId, user.id)))
+    const data = await withRLS((db) =>
+      db.update(aegisAgents)
+        .set(updates)
+        .where(and(eq(aegisAgents.id, id), eq(aegisAgents.userId, user.id)))
         .returning()
     )
 
-    if (data.length === 0) {
-      return createErrorResponse('Entry not found', 404)
-    }
+    if (data.length === 0) return createErrorResponse('Agent not found', 404)
 
-    return NextResponse.json({ entry: toSnakeCase(data[0]) })
+    return NextResponse.json({ agent: toSnakeCase(data[0]) })
   } catch (error) {
-    console.error('PUT /api/modules/module-template/data error:', error instanceof Error ? error.message : error)
+    console.error('PUT /api/modules/aegis-command-center/data error:', error instanceof Error ? error.message : error)
     return createErrorResponse('Internal server error', 500)
   }
 }
@@ -188,24 +129,19 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const queryValidation = validateQueryParams(searchParams, DeleteQuerySchema)
-    if (!queryValidation.success) {
-      return queryValidation.response
-    }
+    if (!queryValidation.success) return queryValidation.response
 
     const { user, withRLS } = await getAuthenticatedUser()
-    if (!user || !withRLS) {
-      return createErrorResponse('Unauthorized - Valid authentication required', 401)
-    }
+    if (!user || !withRLS) return createErrorResponse('Unauthorized', 401)
 
-await withRLS((db) =>
-      db
-        .delete(moduleTemplateEntries)
-        .where(and(eq(moduleTemplateEntries.id, queryValidation.data.id), eq(moduleTemplateEntries.userId, user.id)))
+    await withRLS((db) =>
+      db.delete(aegisAgents)
+        .where(and(eq(aegisAgents.id, queryValidation.data.id), eq(aegisAgents.userId, user.id)))
     )
 
-    return NextResponse.json({ success: true, message: 'Entry deleted successfully' })
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('DELETE /api/modules/module-template/data error:', error instanceof Error ? error.message : error)
+    console.error('DELETE /api/modules/aegis-command-center/data error:', error instanceof Error ? error.message : error)
     return createErrorResponse('Internal server error', 500)
   }
 }
