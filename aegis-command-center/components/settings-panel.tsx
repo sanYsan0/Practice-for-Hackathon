@@ -1,19 +1,3 @@
-/**
- * Module Template Module - Settings Panel
- *
- * This component appears in Settings → Features when the module is enabled.
- * It demonstrates:
- * - TanStack Query for settings management
- * - Form controls (toggle, input, select)
- * - Optimistic updates with rollback
- * - ARI UI patterns
- *
- * IMPORTANT: Settings panel MUST be a client component.
- *
- * Integration: This panel is registered in module.json under
- * "settings.panel": "./components/settings-panel.tsx"
- */
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -30,318 +14,162 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, Save, CheckCircle2 } from 'lucide-react'
-import {
-  useModuleTemplateSettings,
-  useUpdateModuleTemplateSettings,
-} from '../hooks/use-module-template'
-import type { ModuleTemplateSettings } from '../types'
+import { useAegisSettings, useUpdateAegisSettings } from '../hooks/use-aegis'
+import type { AegisSettings } from '../types'
 
-/**
- * Default settings values
- * Used when user hasn't saved any settings yet
- */
-const DEFAULT_SETTINGS: ModuleTemplateSettings = {
-  // Onboarding fields (managed by main page, not settings panel)
-  onboardingCompleted: true,
-  sampleQuestion1: '',
-  sampleQuestion2: '',
-  sampleQuestion3: '',
-  // Feature toggles
-  enableNotifications: true,
+const DEFAULT_SETTINGS: AegisSettings = {
+  openclawEndpoint: 'http://localhost:3001',
+  refreshInterval: '30',
+  alertThreshold: 20,
   showInDashboard: true,
-  defaultMessage: 'Hello, World!',
-  userDisplayName: '',
-  theme: 'auto',
-  refreshInterval: '60'
+  enableNotifications: true,
+  defaultTheme: 'cyberpunk',
 }
 
-/**
- * ModuleTemplateSettings Component
- *
- * Exported as a named export (not default) because it's imported
- * by the Settings page via dynamic import.
- */
-export function ModuleTemplateSettingsPanel() {
+export function AegisCommandCenterSettingsPanel() {
   const { toast } = useToast()
+  const { data: savedSettings, isLoading } = useAegisSettings()
+  const updateSettings = useUpdateAegisSettings()
 
-  // TanStack Query hooks
-  const { data: savedSettings, isLoading } = useModuleTemplateSettings()
-  const updateSettings = useUpdateModuleTemplateSettings()
-
-  // Local state for form (merged with defaults)
-  const [settings, setSettings] = useState<ModuleTemplateSettings>(DEFAULT_SETTINGS)
+  const [settings, setSettings] = useState<AegisSettings>(DEFAULT_SETTINGS)
   const [saved, setSaved] = useState(false)
 
-  // Update local state when saved settings load
   useEffect(() => {
-    if (savedSettings) {
-      setSettings({ ...DEFAULT_SETTINGS, ...savedSettings })
-    }
+    if (savedSettings) setSettings({ ...DEFAULT_SETTINGS, ...savedSettings })
   }, [savedSettings])
 
-  /**
-   * Save settings
-   * Uses optimistic updates via TanStack Query mutation
-   */
   const handleSave = () => {
     setSaved(false)
-
     updateSettings.mutate(settings, {
       onSuccess: () => {
         setSaved(true)
         setTimeout(() => setSaved(false), 3000)
       },
       onError: () => {
-        toast({
-          variant: 'destructive',
-          title: 'Failed to save settings',
-          description: 'Please try again.',
-        })
+        toast({ variant: 'destructive', title: 'Failed to save settings', description: 'Please try again.' })
       },
     })
   }
 
-  /**
-   * Helper to update settings
-   */
-  const updateSetting = <K extends keyof ModuleTemplateSettings>(
-    key: K,
-    value: ModuleTemplateSettings[K]
-  ) => {
+  const update = <K extends keyof AegisSettings>(key: K, value: AegisSettings[K]) =>
     setSettings(prev => ({ ...prev, [key]: value }))
-  }
 
-  // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="text-sm text-muted-foreground">Loading settings...</span>
-        </div>
+      <div className="flex items-center gap-2">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        <span className="text-sm text-muted-foreground">Loading settings...</span>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
-        <h3 className="text-lg font-medium">Module Template Settings</h3>
-        <p className="text-sm text-muted-foreground">
-          Configure your Module Template module preferences
-        </p>
+        <h3 className="text-lg font-medium">Aegis Command Center</h3>
+        <p className="text-sm text-muted-foreground">Configure your local AI agent fleet preferences</p>
       </div>
 
-      {/* Settings Form */}
       <div className="space-y-6">
-        {/* Section 1: Feature Toggles */}
+        {/* Connection */}
         <div className="space-y-4">
-          <h4 className="text-sm font-medium text-muted-foreground">Features</h4>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Enable Notifications</Label>
-              <div className="text-sm text-muted-foreground">
-                Receive notifications for new entries
-              </div>
-            </div>
-            <Switch
-              checked={settings.enableNotifications}
-              onCheckedChange={(checked) =>
-                updateSetting('enableNotifications', checked)
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Show in Dashboard</Label>
-              <div className="text-sm text-muted-foreground">
-                Display widget on main dashboard
-              </div>
-            </div>
-            <Switch
-              checked={settings.showInDashboard}
-              onCheckedChange={(checked) =>
-                updateSetting('showInDashboard', checked)
-              }
-            />
-          </div>
-        </div>
-
-        {/* Section 2: Text Settings */}
-        <div className="space-y-4">
-          <h4 className="text-sm font-medium text-muted-foreground">Customization</h4>
-
+          <h4 className="text-sm font-medium text-muted-foreground">Connection</h4>
           <div className="space-y-2">
-            <Label htmlFor="defaultMessage">Default Message</Label>
+            <Label htmlFor="openclawEndpoint">OpenClaw Endpoint</Label>
             <Input
-              id="defaultMessage"
-              value={settings.defaultMessage}
-              onChange={(e) => updateSetting('defaultMessage', e.target.value)}
-              placeholder="Enter default message"
+              id="openclawEndpoint"
+              value={settings.openclawEndpoint}
+              onChange={(e) => update('openclawEndpoint', e.target.value)}
+              placeholder="http://localhost:3001"
             />
-            <p className="text-xs text-muted-foreground">
-              This message will be used as placeholder text
-            </p>
+            <p className="text-xs text-muted-foreground">URL of your local OpenClaw framework</p>
           </div>
-
           <div className="space-y-2">
-            <Label htmlFor="displayName">Display Name</Label>
-            <Input
-              id="displayName"
-              value={settings.userDisplayName}
-              onChange={(e) => updateSetting('userDisplayName', e.target.value)}
-              placeholder="Enter your display name"
-            />
-            <p className="text-xs text-muted-foreground">
-              Optional: How you want to be addressed in the module
-            </p>
-          </div>
-        </div>
-
-        {/* Section 3: Dropdown Settings */}
-        <div className="space-y-4">
-          <h4 className="text-sm font-medium text-muted-foreground">Preferences</h4>
-
-          <div className="space-y-2">
-            <Label htmlFor="theme">Theme</Label>
-            <Select
-              value={settings.theme}
-              onValueChange={(value: 'light' | 'dark' | 'auto') =>
-                updateSetting('theme', value)
-              }
-            >
-              <SelectTrigger id="theme">
-                <SelectValue placeholder="Select theme" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="auto">Auto (System)</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Choose your preferred color theme
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="refreshInterval">Refresh Interval</Label>
+            <Label htmlFor="refreshInterval">Fleet Refresh Interval</Label>
             <Select
               value={settings.refreshInterval}
-              onValueChange={(value: '30' | '60' | '120') =>
-                updateSetting('refreshInterval', value)
-              }
+              onValueChange={(v: '10' | '30' | '60') => update('refreshInterval', v)}
             >
               <SelectTrigger id="refreshInterval">
-                <SelectValue placeholder="Select interval" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="10">10 seconds</SelectItem>
                 <SelectItem value="30">30 seconds</SelectItem>
                 <SelectItem value="60">1 minute</SelectItem>
-                <SelectItem value="120">2 minutes</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              How often to refresh data in the dashboard widget
-            </p>
           </div>
+        </div>
+
+        {/* Alerts */}
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium text-muted-foreground">Alerts</h4>
+          <div className="space-y-2">
+            <Label htmlFor="alertThreshold">Health Alert Threshold (%)</Label>
+            <Input
+              id="alertThreshold"
+              type="number"
+              min={0}
+              max={100}
+              value={settings.alertThreshold}
+              onChange={(e) => update('alertThreshold', Number(e.target.value))}
+            />
+            <p className="text-xs text-muted-foreground">Alert when an agent health drops below this value</p>
+          </div>
+        </div>
+
+        {/* Display */}
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium text-muted-foreground">Display</h4>
+          <div className="space-y-2">
+            <Label htmlFor="defaultTheme">Default Agent Theme</Label>
+            <Select
+              value={settings.defaultTheme}
+              onValueChange={(v: AegisSettings['defaultTheme']) => update('defaultTheme', v)}
+            >
+              <SelectTrigger id="defaultTheme">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cyberpunk">Cyberpunk</SelectItem>
+                <SelectItem value="neon-green">Neon Green</SelectItem>
+                <SelectItem value="hacker-red">Hacker Red</SelectItem>
+                <SelectItem value="deep-blue">Deep Blue</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {[
+            { key: 'showInDashboard' as const, label: 'Show fleet widget on dashboard', desc: 'Display Aegis widget on main dashboard' },
+            { key: 'enableNotifications' as const, label: 'Enable notifications', desc: 'Alert when agents change status or health drops' },
+          ].map(({ key, label, desc }) => (
+            <div key={key} className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>{label}</Label>
+                <div className="text-sm text-muted-foreground">{desc}</div>
+              </div>
+              <Switch
+                checked={settings[key] as boolean}
+                onCheckedChange={(checked) => update(key, checked)}
+              />
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Save Button */}
       <div className="flex items-center gap-2 pt-4 border-t">
         <Button onClick={handleSave} disabled={updateSettings.isPending}>
           {updateSettings.isPending ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </>
+            <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
           ) : saved ? (
-            <>
-              <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />
-              Saved!
-            </>
+            <><CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />Saved!</>
           ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              Save Settings
-            </>
+            <><Save className="w-4 h-4 mr-2" />Save Settings</>
           )}
         </Button>
-
-        {saved && (
-          <span className="text-sm text-green-600">
-            Settings saved successfully
-          </span>
-        )}
-      </div>
-
-      {/* Developer Info */}
-      <div className="pt-4 border-t">
-        <details className="text-sm">
-          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-            Developer Information
-          </summary>
-          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-            <p>• Settings stored in: <code>module_settings.settings</code> (JSONB)</p>
-            <p>• API endpoint: <code>/api/modules/module-template/settings</code></p>
-            <p>• User-specific: Each user has their own settings</p>
-            <p>• Default values: Defined in DEFAULT_SETTINGS constant</p>
-            <p>• Auth: Better Auth cookies (no Authorization header needed)</p>
-          </div>
-        </details>
+        {saved && <span className="text-sm text-green-600">Settings saved successfully</span>}
       </div>
     </div>
   )
 }
-
-/**
- * DEVELOPER NOTES:
- *
- * 1. Authentication:
- *    - Better Auth uses HTTP-only cookies — fetches inside the hook send
- *      them automatically. Do not pass `Authorization` headers.
- *    - Server-side, the API route calls `getAuthenticatedUser()` + `withRLS()`
- *      so tenant isolation holds even if a caller forgets a filter.
- *
- * 2. Settings Architecture:
- *    - Row lives in `public.module_settings`, column `settings` (JSONB),
- *      one row per `(user_id, module_id)`.
- *    - Row access is enforced by `withRLS()` — callers cannot read or write
- *      another user's settings even with a crafted payload.
- *    - Always ship a `DEFAULT_SETTINGS` constant and merge:
- *      `setSettings({ ...DEFAULT_SETTINGS, ...savedSettings })`. This keeps
- *      controlled form inputs from flipping between undefined and a value.
- *
- * 3. TanStack Query (the optimistic-update pattern):
- *    - `useModuleTemplateSettings()` reads the `['module-template-settings']`
- *      cache; every consumer that uses the same key shares the same data.
- *    - `useUpdateModuleTemplateSettings()` follows the standard four-step
- *      optimistic update in `hooks/use-module-template.ts`:
- *        a. `onMutate`: `cancelQueries` → snapshot previous → `setQueryData`
- *           with the new value → return `{ previous }` for rollback.
- *        b. `onError`: restore the snapshot from context.
- *        c. `onSettled`: `invalidateQueries` to refetch the source of truth.
- *    - This means the UI reflects changes before the server responds, and
- *      automatically corrects itself if the save fails.
- *
- * 4. Form Controls:
- *    - Use Shadcn/ui components for consistency.
- *    - Provide a clear `<Label>` and a description line for every control.
- *    - Validation lives server-side (Zod in the API route); surface failures
- *      via `onError` + `toast({ variant: 'destructive' })` rather than
- *      building a parallel client-side schema.
- *    - Disable inputs while `updateSettings.isPending` — do not let users
- *      queue conflicting edits.
- *
- * 5. User Feedback:
- *    - Loading: render a spinner while `isLoading`.
- *    - Saving: swap the save button label while `isPending`.
- *    - Success: flip `saved=true` for a short window (3s) for inline
- *      confirmation. Avoid toasting success on every keystroke.
- *    - Failure: toast with `variant: 'destructive'` and keep the form
- *      editable so the user can retry.
- */

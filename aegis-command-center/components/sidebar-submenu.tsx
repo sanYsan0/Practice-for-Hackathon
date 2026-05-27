@@ -13,18 +13,18 @@ import { Home, Settings } from 'lucide-react'
 
 const menuItems = [
   {
-    label: 'Overview',
-    path: '/module-template',
+    label: 'Command Center',
+    path: '/aegis',
     icon: Home,
   },
   {
     label: 'Settings',
-    path: '/module-template/settings',
+    path: '/aegis/settings',
     icon: Settings,
   },
 ]
 
-export default function ModuleTemplateSubmenu({ moduleId, module }: ModuleSubmenuProps) {
+export default function AegisCommandCenterSubmenu({ moduleId, module }: ModuleSubmenuProps) {
   const pathname = usePathname()
 
   return (

@@ -13,6 +13,23 @@
   },
   "settings": {
     "hasSettings": true,
-    "route": "/aegis/settings"
+    "route": "/aegis/settings",
+    "panel": "./components/settings-panel.tsx",
+    "panelExport": "AegisCommandCenterSettingsPanel"
+  },
+  "dashboard": {
+    "widgetComponents": ["./components/widget.tsx"],
+    "widgetExport": "AegisCommandCenterWidget"
+  },
+  "database": {
+    "schema": "./database/schema.ts",
+    "migrations": "./database/schema.sql",
+    "uninstall": "./database/uninstall.sql"
+  },
+  "api": {
+    "routes": [
+      "./api/data/route.ts",
+      "./api/settings/route.ts"
+    ]
   }
 }

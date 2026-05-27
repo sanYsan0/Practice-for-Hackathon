@@ -17,9 +17,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Upload, Trash2, FileIcon, Loader2, ImageIcon } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { useUploadFile, useListFiles, useDeleteFile } from '../hooks/use-module-template'
+import { useUploadFile, useListFiles, useDeleteFile } from '../hooks/use-aegis'
 
-const BUCKET = 'module-template'
+const BUCKET = 'aegis-command-center'
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE_MB = 5
 
