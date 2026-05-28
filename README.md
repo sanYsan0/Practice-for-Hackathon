@@ -1,3 +1,4 @@
+<img width="1280" height="576" alt="Aegis ARI Dashboard" src="https://github.com/user-attachments/assets/596a0815-5475-4722-ac2a-660d31d81e78" />
 # Aegis Command Center
 
 **A custom ARI.Software module for spawning, monitoring, and orchestrating autonomous AI agents — built for the ARI.HACK Hackathon (Toronto Tech Week 2026).**
